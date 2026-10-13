@@ -1,0 +1,54 @@
+name: LocalShorts Studio CI & Release
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'localshorts-studio/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'localshorts-studio/**'
+  workflow_dispatch:
+
+jobs:
+  verify-and-package:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: localshorts-studio
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Bootstrap Portable Runtime & Dependencies
+        shell: pwsh
+        run: ./scripts/bootstrap.ps1 -SkipModelPull
+
+      - name: Run Ruff Linter
+        shell: pwsh
+        run: ./.venv/Scripts/ruff.exe check src tests
+
+      - name: Run Automated Pytest Suite
+        shell: pwsh
+        run: ./.venv/Scripts/pytest.exe -v
+
+      - name: Run Automated Diagnostics
+        shell: pwsh
+        run: ./scripts/diagnostics.ps1
+
+      - name: Build Portable ZIP & Installer
+        shell: pwsh
+        run: |
+          ./scripts/build-portable.ps1
+          ./scripts/build-installer.ps1
+
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalShortsStudio-Windows-x64
+          path: |
+            localshorts-studio/dist/LocalShortsStudio-Windows-x64-portable.zip
+            localshorts-studio/dist/LocalShortsStudio-Setup-x64.exe
+            localshorts-studio/dist/SHA256SUMS.txt

@@ -38,14 +38,11 @@ docs/DATASETS.md
 # LocalShorts Studio runtime, build & media cache ignores
 localshorts-studio/.venv/
 localshorts-studio/.runtime/
-localshorts-studio/data/*
-!localshorts-studio/data/.gitkeep
-localshorts-studio/cache/*
-!localshorts-studio/cache/.gitkeep
-localshorts-studio/output/*
-!localshorts-studio/output/.gitkeep
-localshorts-studio/logs/*
-!localshorts-studio/logs/.gitkeep
+localshorts-studio/runtime/
+localshorts-studio/data/
+localshorts-studio/cache/
+localshorts-studio/output/
+localshorts-studio/logs/
 localshorts-studio/dist/
 localshorts-studio/**/__pycache__/
 localshorts-studio/**/.pytest_cache/
@@ -54,3 +51,4 @@ localshorts-studio/assets/authorized_media/*
 !localshorts-studio/assets/authorized_media/.gitkeep
 localshorts-studio/assets/music/*
 !localshorts-studio/assets/music/.gitkeep
+
