@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "localshorts-studio"
+version = "0.1.0"
+description = "LocalShorts Studio — Free Local AI Shorts Factory (Local-first, zero-subscription YouTube Shorts production studio)"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "LocalShorts Studio" }]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "sqlalchemy>=2.0.35",
+    "sqlmodel>=0.0.22",
+    "pydantic>=2.9.2",
+    "pydantic-settings>=2.6.0",
+    "httpx>=0.27.2",
+    "feedparser>=6.0.11",
+    "beautifulsoup4>=4.12.3",
+    "jinja2>=3.1.4",
+    "python-multipart>=0.0.12",
+    "pillow>=10.4.0",
+    "numpy>=1.26.4,<2.2.0",
+    "scipy>=1.13.1",
+    "soundfile>=0.12.1",
+    "kokoro-onnx>=0.4.0",
+    "pyttsx3>=2.98",
+    "psutil>=6.1.0",
+    "rapidfuzz>=3.10.0",
+    "aiofiles>=24.1.0",
+]
+
+[project.optional-dependencies]
+whisper = [
+    "faster-whisper>=1.0.3",
+]
+dev = [
+    "pytest>=8.3.3",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.7.0",
+]
+
+[project.scripts]
+localshorts = "localshorts.main:run_cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/localshorts"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]

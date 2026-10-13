@@ -1,0 +1,43 @@
+# Virtual environment & Python cache
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Local runtime binaries & large model weights (never commit to Git)
+.runtime/
+runtime/*
+!runtime/.gitkeep
+*.onnx
+*.bin
+*.gguf
+*.pt
+*.pth
+*.safetensors
+
+# Application data, SQLite databases, caches, logs, and rendered outputs
+data/*
+!data/.gitkeep
+cache/*
+!cache/.gitkeep
+output/*
+!output/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# User-provided media & music
+assets/authorized_media/*
+!assets/authorized_media/.gitkeep
+assets/music/*
+!assets/music/.gitkeep
+
+# Environment & OS files
+.env
+.env.local
+Thumbs.db
+.DS_Store
