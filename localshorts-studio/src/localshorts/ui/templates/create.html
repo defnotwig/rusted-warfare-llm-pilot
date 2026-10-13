@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Create New Short — Custom or Trend-Assisted</div>
+        <div class="card-subtitle">Produces a complete 1080×1920 30fps vertical MP4 with kinetic captions, TTS narration, and CC0 SFX</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Story Topic / Headline</label>
+      <input id="create-topic" type="text" class="form-input" placeholder="e.g., How MrBeast Built a 100-Camera Production Studio in 48 Hours" value="How Modern Viral Creators Engineer High-Retention 35-Second Stories">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Select From Scanned Trend (Optional)</label>
+      <select id="create-trend-id" class="form-select">
+        <option value="">-- Custom / Manual Topic --</option>
+        {% for t in trends %}
+        <option value="{{ t.id }}">[Score {{ t.trend_score }}] {{ t.canonical_title[:80] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Procedural Visual Preset</label>
+        <select id="create-preset" class="form-select">
+          {% for p in visual_presets %}
+          <option value="{{ p }}" {% if p == settings.default_visual_preset %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Caption Preset</label>
+        <select id="create-caption" class="form-select">
+          {% for c in caption_presets %}
+          <option value="{{ c }}" {% if c == settings.default_caption_preset %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Voice / TTS Engine ({{ settings.tts_engine }})</label>
+      <input id="create-voice" type="text" class="form-input" value="{{ settings.tts_voice }}">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Manual Script Override (Optional — leave blank to generate via Local Ollama `{{ settings.ollama_model }}`)</label>
+      <textarea id="create-script" class="form-textarea" placeholder="Leave blank for automatic 55–80 word script generation with originality verification. If entering manually, provide 55–80 spoken words."></textarea>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="btn btn-primary" onclick="submitCreateForm()">Queue &amp; Render Short</button>
+      <button class="btn btn-secondary" onclick="triggerSmokeTest()">Run Instant 15s Smoke Test</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Pipeline Architecture &amp; Quality Gates</div>
+        <div class="card-subtitle">Every Short passes 18 automated stages before entering `ready-to-upload/`</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr>
+            <td><strong>1. Script &amp; Hook</strong></td>
+            <td class="text-xs text-secondary">55–80 words (`20–45s`), bans generic AI intros, generates 3 hooks + curiosity cliff + concrete payoff.</td>
+          </tr>
+          <tr>
+            <td><strong>2. Originality Gate</strong></td>
+            <td class="text-xs text-secondary">3-gram Jaccard + RapidFuzz + TF-IDF cosine check (`&lt; 0.78`) against source headlines and last 90 days of local scripts.</td>
+          </tr>
+          <tr>
+            <td><strong>3. Scene Planner</strong></td>
+            <td class="text-xs text-secondary">8–15 dynamic visual beats (`2.0–4.0s` each), enforces adjacent visual-type diversity and 2–5 punch zooms.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Local CPU TTS</strong></td>
+            <td class="text-xs text-secondary">Clause-level WAV synthesis + voice-first mixing (`-14 LUFS` voice, `-24 dB` SFX ducking, `-1.0 dBTP` soft limiter).</td>
+          </tr>
+          <tr>
+            <td><strong>5. Kinetic Captions</strong></td>
+            <td class="text-xs text-secondary">2–5 words per card, automatic yellow/cyan emphasis on numbers &amp; power verbs, burned in via `.ass` + exported `.srt`.</td>
+          </tr>
+          <tr>
+            <td><strong>6. NVENC / CPU Render</strong></td>
+            <td class="text-xs text-secondary">`1080×1920` 30fps `yuv420p` MP4 via `h264_nvenc` (or `libx264` fallback) after unloading Ollama VRAM.</td>
+          </tr>
+          <tr>
+            <td><strong>7. Technical &amp; Content QC</strong></td>
+            <td class="text-xs text-secondary">Verifies resolution, audio stream, freeze frames, and scores 0–100 across Hook, Retention, Originality, Audio, Visuals, and Captions (`&gt;= 70` required for `READY`).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

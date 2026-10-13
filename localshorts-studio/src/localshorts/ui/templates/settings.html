@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Pipeline, LLM &amp; Hardware Settings</div>
+        <div class="card-subtitle">Saved persistently in SQLite WAL (`data/localshorts.db`)</div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Hardware Profile Override</label>
+        <select id="setting-hardware-profile" class="form-select">
+          <option value="AUTO" {% if settings.hardware_profile == 'AUTO' %}selected{% endif %}>AUTO ({{ hw.recommended_profile }})</option>
+          <option value="LIGHTWEIGHT" {% if settings.hardware_profile == 'LIGHTWEIGHT' %}selected{% endif %}>LIGHTWEIGHT (&lt;=8 GB RAM / CPU)</option>
+          <option value="BALANCED" {% if settings.hardware_profile == 'BALANCED' %}selected{% endif %}>BALANCED (16 GB RAM / 4 GB VRAM Default)</option>
+          <option value="PERFORMANCE" {% if settings.hardware_profile == 'PERFORMANCE' %}selected{% endif %}>PERFORMANCE (&gt;=32 GB RAM / &gt;=8 GB VRAM)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Daily Target Candidate Shorts</label>
+        <input id="setting-daily-target" type="number" min="1" max="30" class="form-input" value="{{ settings.daily_target_shorts }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Ollama Model</label>
+        <input id="setting-ollama-model" type="text" class="form-input" value="{{ settings.ollama_model }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ollama Context Window (`num_ctx`)</label>
+        <select id="setting-ollama-ctx" class="form-select">
+          <option value="4096" {% if settings.ollama_context == 4096 %}selected{% endif %}>4096 (Default for 4 GB VRAM)</option>
+          <option value="8192" {% if settings.ollama_context == 8192 %}selected{% endif %}>8192 (Extended Context)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">TTS Engine (CPU Only)</label>
+        <select id="setting-tts-engine" class="form-select">
+          <option value="kokoro" {% if settings.tts_engine == 'kokoro' %}selected{% endif %}>Kokoro-82M ONNX (Primary)</option>
+          <option value="piper" {% if settings.tts_engine == 'piper' %}selected{% endif %}>Piper Local ONNX</option>
+          <option value="sapi" {% if settings.tts_engine == 'sapi' %}selected{% endif %}>Windows SAPI5 Native</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Default Voice ID</label>
+        <input id="setting-tts-voice" type="text" class="form-input" value="{{ settings.tts_voice }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Default Visual Preset</label>
+        <select id="setting-visual-preset" class="form-select">
+          {% for p in visual_presets %}
+          <option value="{{ p }}" {% if p == settings.default_visual_preset %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Default Caption Preset</label>
+        <select id="setting-caption-preset" class="form-select">
+          {% for c in caption_presets %}
+          <option value="{{ c }}" {% if c == settings.default_caption_preset %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Content Niche Profile</label>
+      <input id="setting-niche" type="text" class="form-input" value="{{ settings.niche_name }}">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Watched Creators &amp; Topics (Comma-separated)</label>
+      <textarea id="setting-keywords" class="form-textarea">{{ watched_keywords | join(", ") }}</textarea>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">
+          <input id="setting-battery-override" type="checkbox" {% if settings.allow_battery_batch %}checked{% endif %}>
+          Allow Batch Generation on Battery Power
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          <input id="setting-auto-start" type="checkbox" {% if settings.auto_start_windows %}checked{% endif %}>
+          Start Catch-Up Scheduler at Windows Login (`HKCU\...\Run`)
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Optional Free Stock Media Keys (Never Required)</div>
+        <div class="card-subtitle">Procedural &amp; Wikimedia Commons visuals work with zero keys</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Pexels API Key (Optional Free Key)</label>
+      <input id="setting-pexels-key" type="password" class="form-input" placeholder="{% if settings.pexels_api_key_set %}******** (Configured){% else %}Not configured — optional{% endif %}">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Pixabay API Key (Optional Free Key)</label>
+      <input id="setting-pixabay-key" type="password" class="form-input" placeholder="{% if settings.pixabay_api_key_set %}******** (Configured){% else %}Not configured — optional{% endif %}">
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid var(--border); margin: 18px 0;">
+
+    <div class="card-title mb-2">Authorized Local Media Library (`assets/authorized_media/`)</div>
+    <div class="text-xs text-secondary mb-3">
+      Place user-owned or licensed MP4/JPG/PNG files in `assets/authorized_media/{CreatorName}/` with an optional `manifest.json` (`owner`, `license_type`, `attribution_text`, `allowed_use`) to automatically weave them into matching creator stories.
+    </div>
+    <div class="text-xs mono text-muted">
+      Discovered Authorized Assets: <strong>{{ authorized_media | length }}</strong>
+    </div>
+  </div>
+</div>
+{% endblock %}

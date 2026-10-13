@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Output Library &amp; Ready-to-Upload Shorts</div>
+      <div class="card-subtitle">All rendered 1080×1920 MP4s with companion metadata, captions, QC breakdown, and source manifest</div>
+    </div>
+    <a href="/create" class="btn btn-primary">+ Create New Short</a>
+  </div>
+</div>
+
+{% if jobs %}
+<div class="grid-3">
+  {% for j in jobs %}
+  <div class="card">
+    <div class="flex justify-between items-center mb-2">
+      <span class="badge {% if j.state == 'READY' %}badge-success{% else %}badge-danger{% endif %}">{{ j.state }}</span>
+      <span class="badge badge-purple">QC {{ j.quality_score }}/100</span>
+    </div>
+    <div class="font-bold text-sm mb-2">{{ j.topic_title }}</div>
+    <div class="text-xs mono text-muted mb-3">
+      {{ j.slug }} · {{ j.duration_sec | round(1) }}s · {{ j.encoder_used }}
+    </div>
+
+    {% if j.final_video_path %}
+    <div class="video-preview-box mb-3">
+      <video controls preload="metadata" poster="/api/library/{{ j.id }}/thumbnail">
+        <source src="/api/library/{{ j.id }}/video" type="video/mp4">
+      </video>
+    </div>
+    {% endif %}
+
+    <div class="text-xs text-secondary mb-3">
+      <strong>Spoken Script:</strong> {{ j.script_text[:180] }}{% if j.script_text | length > 180 %}...{% endif %}
+    </div>
+
+    <div class="flex gap-2" style="flex-wrap: wrap;">
+      <a href="/api/library/{{ j.id }}/video" download="{{ j.slug }}_final.mp4" class="btn btn-sm btn-primary">Download MP4</a>
+      <button class="btn btn-sm btn-secondary" onclick="regenerateStage({{ j.id }}, 'CAPTIONS')">Re-Style Captions</button>
+      <button class="btn btn-sm btn-secondary" onclick="regenerateStage({{ j.id }}, 'RENDER')">Re-Encode</button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="text-sm text-muted">No completed videos yet. Click <strong>1-Click Smoke Test</strong> in the top bar to render your first verified 1080×1920 Short right now!</div>
+</div>
+{% endif %}
+{% endblock %}

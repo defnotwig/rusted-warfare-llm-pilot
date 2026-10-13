@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Trend Discovery, Velocity &amp; Source Confidence Engine</div>
+      <div class="card-subtitle">Scans Google News RSS, Reddit JSON/RSS, Hacker News Algolia, YouTube Public RSS, Wikimedia Featured &amp; Local Watchlist</div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn btn-primary" onclick="scanTrends(false)">Scan All Feeds Now</button>
+      <button class="btn btn-secondary" onclick="scanTrends(true)">Generate Research-Only Briefs</button>
+    </div>
+  </div>
+  <div class="text-xs text-secondary">
+    <strong>Watched Keywords ({{ settings.niche_name }}):</strong>
+    {% for kw in watched_keywords %}
+    <span class="badge badge-info">{{ kw }}</span>
+    {% endfor %}
+  </div>
+</div>
+
+{% if research_briefs %}
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Today's Research-Only Briefs (`output/YYYY-MM-DD/research-briefs/`)</div>
+      <div class="card-subtitle">Ranked topics, proposed hooks, source links, and confidence scores without video rendering</div>
+    </div>
+  </div>
+  <div class="grid-3">
+    {% for b in research_briefs[:6] %}
+    <div class="stat-card">
+      <div class="flex justify-between items-center mb-2">
+        <span class="badge badge-purple">Score {{ b.trend_score }}</span>
+        <span class="badge {% if b.confidence_label == 'HIGH' %}badge-success{% elif b.confidence_label == 'MEDIUM' %}badge-warning{% else %}badge-danger{% endif %}">
+          {{ b.confidence_label }} ({{ b.source_confidence }})
+        </span>
+      </div>
+      <div class="font-bold text-sm mb-2">{{ b.title }}</div>
+      <div class="text-xs text-secondary mb-2"><strong>Hook 1:</strong> {{ b.proposed_hooks[0] }}</div>
+      <div class="text-xs text-muted">{{ b.editorial_framing_rule }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Ranked Story Candidates ({{ trends | length }})</div>
+      <div class="card-subtitle">Missing-signal weight redistribution &amp; RapidFuzz topic clustering active</div>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Canonical Story Title</th>
+          <th>Category</th>
+          <th>Trend Score</th>
+          <th>Velocity / Outlier</th>
+          <th>Source Confidence</th>
+          <th>Framing Policy</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in trends %}
+        <tr>
+          <td>
+            <div class="font-bold">{{ t.canonical_title }}</div>
+            <div class="text-xs text-muted">{{ t.summary[:120] }}...</div>
+          </td>
+          <td><span class="badge badge-info">{{ t.category }}</span></td>
+          <td><span class="badge badge-purple">{{ t.trend_score }}/100</span></td>
+          <td class="text-xs mono">
+            Vel: {{ t.velocity_score }}<br>
+            Outlier: {{ t.outlier_multiplier }}x
+          </td>
+          <td>
+            <span class="badge {% if t.confidence_label == 'HIGH' %}badge-success{% elif t.confidence_label == 'MEDIUM' %}badge-warning{% else %}badge-danger{% endif %}">
+              {{ t.source_confidence }}/100 ({{ t.confidence_label }})
+            </span>
+            <div class="text-xs text-muted mt-2">{{ t.source_count }} independent source(s)</div>
+          </td>
+          <td class="text-xs text-secondary">
+            {% if t.confidence_label == 'HIGH' %}
+            Direct factual reporting permitted
+            {% elif t.confidence_label == 'MEDIUM' %}
+            Requires attribution ("According to...")
+            {% else %}
+            Blocked from factual claims
+            {% endif %}
+          </td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="queueFromTrend({{ t.id }}, '{{ settings.default_visual_preset }}')">Create Short</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-muted">No trends discovered yet. Click <strong>Scan All Feeds Now</strong> to fetch live stories.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

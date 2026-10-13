@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid-4 mb-4">
+  <div class="stat-card">
+    <div class="stat-label">Today's Output</div>
+    <div class="stat-value">{{ daily_generated }} / {{ settings.daily_target_shorts }}</div>
+    <div class="stat-meta">{{ ready_count }} passed QC (`READY`)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Discovered Trends</div>
+    <div class="stat-value">{{ top_trends | length }}</div>
+    <div class="stat-meta">Ranked by Velocity + Authority + Visual Fit</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">GPU / Thermal Safety</div>
+    <div class="stat-value">{{ hw.gpu_temperature_c or '--' }}°C</div>
+    <div class="stat-meta">State: {{ hw.thermal_state }} (&lt;80°C Normal)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Storage Available</div>
+    <div class="stat-value">{{ hw.disk_free_gb }} GB</div>
+    <div class="stat-meta">15 GB LRU Media Cache Limit</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Quick Actions — Automated Daily Production</div>
+      <div class="card-subtitle">Generate up to 10 candidate Shorts/day (~300/month) with zero subscriptions</div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn btn-secondary" onclick="scanTrends(false)">Scan Live Trends</button>
+      <button class="btn btn-secondary" onclick="scanTrends(true)">Research-Only Briefs</button>
+      <button class="btn btn-primary" onclick="generateDailyBatch(3)">Generate 3 Candidate Shorts Now</button>
+      <button class="btn btn-success" onclick="generateDailyBatch({{ settings.daily_target_shorts }})">Run Full Daily Batch ({{ settings.daily_target_shorts }})</button>
+    </div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: {{ ((daily_generated / (settings.daily_target_shorts or 10)) * 100) | round(0) }}%;"></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Top Ranked Trends -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Top Ranked Trends</div>
+        <div class="card-subtitle">Highest Trend Score + Source Confidence</div>
+      </div>
+      <a href="/research" class="btn btn-sm btn-secondary">All Trends</a>
+    </div>
+    {% if top_trends %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th>Trend Score</th>
+            <th>Confidence</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in top_trends %}
+          <tr>
+            <td>
+              <div class="font-bold">{{ t.canonical_title[:68] }}</div>
+              <div class="text-xs text-muted">{{ t.category }} · {{ t.source_count }} source(s) · {{ t.outlier_multiplier }}x baseline</div>
+            </td>
+            <td><span class="badge badge-purple">{{ t.trend_score }}</span></td>
+            <td>
+              <span class="badge {% if t.confidence_label == 'HIGH' %}badge-success{% elif t.confidence_label == 'MEDIUM' %}badge-warning{% else %}badge-danger{% endif %}">
+                {{ t.source_confidence }} ({{ t.confidence_label }})
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="queueFromTrend({{ t.id }}, '{{ settings.default_visual_preset }}')">Produce</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-sm text-muted">No trends scanned yet. Click <strong>Scan Live Trends</strong> above to populate candidate stories.</div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Jobs -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Recent Production Jobs</div>
+        <div class="card-subtitle">Sequential state machine &amp; QC gates</div>
+      </div>
+      <a href="/queue" class="btn btn-sm btn-secondary">Manage Queue</a>
+    </div>
+    {% if recent_jobs %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Job / Slug</th>
+            <th>State</th>
+            <th>Quality</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for j in recent_jobs %}
+          <tr>
+            <td>
+              <div class="font-bold">{{ j.topic_title[:55] }}</div>
+              <div class="text-xs mono text-muted">{{ j.slug }} · {{ j.encoder_used or 'pending' }}</div>
+            </td>
+            <td>
+              <span class="badge {% if j.state == 'READY' %}badge-success{% elif j.state in ['FAILED', 'REJECTED_QUALITY'] %}badge-danger{% elif j.state == 'QUEUED' %}badge-info{% else %}badge-warning{% endif %}">
+                {{ j.state }}
+              </span>
+            </td>
+            <td>
+              {% if j.quality_score %}
+              <span class="mono font-bold">{{ j.quality_score }}/100</span>
+              {% else %}
+              <span class="text-xs text-muted">--</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if j.state == 'READY' %}
+              <a href="/library" class="btn btn-sm btn-success">View MP4</a>
+              {% else %}
+              <a href="/queue" class="btn btn-sm btn-secondary">Inspect</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-sm text-muted">No jobs queued yet. Click <strong>1-Click Smoke Test</strong> in the top bar or produce a trend!</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

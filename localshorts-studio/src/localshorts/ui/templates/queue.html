@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Sequential Production Queue &amp; Per-Stage Regeneration</div>
+      <div class="card-subtitle">SQLite WAL crash-recoverable state machine — 1 job at a time to protect 4 GB VRAM &amp; laptop thermals</div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn btn-secondary" onclick="window.location.reload()">Refresh Queue</button>
+      <button class="btn btn-primary" onclick="generateDailyBatch(3)">Queue 3 Candidate Shorts</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID / Slug</th>
+          <th>Topic Title</th>
+          <th>State &amp; Progress</th>
+          <th>Preset / Encoder</th>
+          <th>Scores</th>
+          <th>Per-Stage Regeneration &amp; Controls</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr>
+          <td class="mono text-xs">
+            #{{ j.id }}<br>
+            <span class="text-muted">{{ j.slug }}</span>
+          </td>
+          <td>
+            <div class="font-bold">{{ j.topic_title }}</div>
+            {% if j.error_message %}
+            <div class="text-xs" style="color: var(--danger);">{{ j.error_message[:120] }}</div>
+            {% endif %}
+          </td>
+          <td style="min-width: 170px;">
+            <div class="flex justify-between items-center mb-2">
+              <span class="badge {% if j.state == 'READY' %}badge-success{% elif j.state in ['FAILED', 'REJECTED_QUALITY', 'CANCELLED'] %}badge-danger{% elif j.state == 'QUEUED' %}badge-info{% else %}badge-warning{% endif %}">
+                {{ j.state }}
+              </span>
+              <span class="mono text-xs">{{ j.progress_pct }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: {{ j.progress_pct }}%;"></div>
+            </div>
+          </td>
+          <td class="text-xs">
+            <div>{{ j.visual_preset }}</div>
+            <div class="mono text-muted">{{ j.encoder_used or 'pending' }} · {{ j.duration_sec | round(1) }}s</div>
+          </td>
+          <td class="mono text-xs">
+            QC: <strong>{{ j.quality_score }}/100</strong><br>
+            Orig Sim: {{ j.originality_similarity | round(2) }}
+          </td>
+          <td>
+            <div class="flex gap-2" style="flex-wrap: wrap;">
+              <button class="btn btn-sm btn-secondary" title="Regenerate script & downstream" onclick="regenerateStage({{ j.id }}, 'SCRIPT')">Regen Script</button>
+              <button class="btn btn-sm btn-secondary" title="Regenerate TTS audio & render" onclick="regenerateStage({{ j.id }}, 'TTS')">Regen Voice</button>
+              <button class="btn btn-sm btn-secondary" title="Regenerate captions & burn-in" onclick="regenerateStage({{ j.id }}, 'CAPTIONS')">Regen Captions</button>
+              <button class="btn btn-sm btn-secondary" title="Regenerate procedural visuals & render" onclick="regenerateStage({{ j.id }}, 'SCENES')">Regen Visuals</button>
+              <button class="btn btn-sm btn-secondary" title="Re-encode MP4 & re-run QC" onclick="regenerateStage({{ j.id }}, 'RENDER')">Re-Render</button>
+              {% if j.state not in ['READY', 'CANCELLED', 'FAILED'] %}
+              <button class="btn btn-sm btn-danger" onclick="cancelJob({{ j.id }})">Cancel</button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-muted">No jobs in queue. Use <strong>Create Short</strong> or <strong>1-Click Smoke Test</strong> to enqueue a video.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

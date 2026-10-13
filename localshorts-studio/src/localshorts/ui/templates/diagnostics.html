@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">
+    <div>
+      <div class="card-title">System Diagnostics, Maintenance &amp; Recovery</div>
+      <div class="card-subtitle">Inspect live hardware telemetry, clear caches, restart services, or export a redacted diagnostic bundle</div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn btn-secondary" onclick="restartOllama()">Restart Ollama</button>
+      <button class="btn btn-secondary" onclick="clearTempCache()">Clear Temp Cache</button>
+      <button class="btn btn-primary" onclick="exportDiagnostics()">Export Redacted Diagnostics ZIP</button>
+    </div>
+  </div>
+
+  <div class="grid-4 mb-4">
+    <div class="stat-card">
+      <div class="stat-label">GPU / NVENC</div>
+      <div class="stat-value text-sm">{{ hw.gpu_model }}</div>
+      <div class="stat-meta">NVENC: {{ "Enabled" if hw.nvenc_available else "CPU Fallback" }} · Temp: {{ hw.gpu_temperature_c or '--' }}°C</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">VRAM / RAM</div>
+      <div class="stat-value text-sm">{{ hw.vram_free_mb }} / {{ hw.vram_total_mb }} MB</div>
+      <div class="stat-meta">RAM Free: {{ hw.ram_free_gb }} / {{ hw.ram_total_gb }} GB</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Media Cache Usage</div>
+      <div class="stat-value text-sm">{{ cache_stats.total_mb }} MB</div>
+      <div class="stat-meta">{{ cache_stats.entry_count }} cached assets (Limit {{ cache_stats.limit_gb }} GB)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ollama Service</div>
+      <div class="stat-value text-sm">{{ "ONLINE" if hw.ollama_service_running else "OFFLINE" }}</div>
+      <div class="stat-meta">{{ hw.ollama_models | length }} local model(s) installed</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Structured JSON Lines Application Log (`logs/app.jsonl`)</div>
+      <div class="card-subtitle">Most recent 40 operational events</div>
+    </div>
+    <button class="btn btn-sm btn-secondary" onclick="window.location.reload()">Refresh Logs</button>
+  </div>
+  <pre style="background: #080b11; border: 1px solid var(--border); border-radius: 8px; padding: 14px; overflow-x: auto; font-size: 11px; color: #94a3b8; max-height: 440px;" class="mono">{% for line in log_tail %}{{ line }}
+{% else %}No log entries recorded yet.{% endfor %}</pre>
+</div>
+{% endblock %}
